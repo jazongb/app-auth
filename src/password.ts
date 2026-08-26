@@ -33,12 +33,18 @@ export interface PasswordClient {
       data: { user: { id: string; email?: string | null } | null };
       error: { message: string } | null;
     }>;
-    updateUser(params: { password: string }): Promise<{
+    updateUser(params: { password?: string; data?: Record<string, unknown> }): Promise<{
       data: { user: { id: string; email?: string | null } | null };
       error: { message: string } | null;
     }>;
     getUser(): Promise<{
-      data: { user: { id: string; email?: string | null } | null };
+      data: {
+        user: {
+          id: string;
+          email?: string | null;
+          user_metadata?: Record<string, unknown> | null;
+        } | null;
+      };
       error: { message: string } | null;
     }>;
     signOut(): Promise<unknown>;
@@ -135,7 +141,18 @@ export async function setPassword(
     return { status: confirmed.status, body: { error: confirmed.error } };
   }
 
-  const { error } = await opts.supabase.auth.updateUser({ password: opts.password });
+  // Stamped in the same call as the password itself.
+  //
+  // Supabase gives every user a random encrypted_password at creation, even
+  // one who has only ever signed in with a code — so `encrypted_password is
+  // not null` says nothing about whether a password was ever *chosen*. This
+  // flag is the only honest signal, and it lives on the user rather than in
+  // an app's roster table so several apps sharing an auth.users pool all see
+  // the same answer.
+  const { error } = await opts.supabase.auth.updateUser({
+    password: opts.password,
+    data: { has_password: true },
+  });
   if (error) {
     // Supabase's own rejections are worth surfacing rather than flattening —
     // "this password has been found in a data breach" is actionable, and only
@@ -146,3 +163,28 @@ export async function setPassword(
 
   return { status: 200, body: { ok: true } };
 }
+
+
+/**
+ * Whether this user has ever chosen a password.
+ *
+ * Only ever answered for a user who is already signed in. Exposing it at the
+ * login page — "does this address have a password?" — would be a user
+ * enumeration oracle: anyone could probe addresses to learn which exist.
+ * A login form that wants to default to the password field should remember
+ * that per-browser instead, where the answer reveals nothing to anyone who
+ * was not already using that browser.
+ */
+export function hasPassword(
+  user: { user_metadata?: Record<string, unknown> | null } | null | undefined
+): boolean {
+  return user?.user_metadata?.has_password === true;
+}
+
+/**
+ * localStorage key for the per-browser hint about which sign-in method last
+ * worked here. Shared so both apps agree, and so the value is easy to find
+ * and clear. It is a convenience hint only — never a credential, and never
+ * trusted for anything but which tab to show first.
+ */
+export const SIGNIN_HINT_KEY = 'app_auth_signin_hint';

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { signInWithPassword, setPassword, passwordProblem, MIN_PASSWORD_LENGTH } from '../dist/index.js';
+import { signInWithPassword, setPassword, passwordProblem, hasPassword, MIN_PASSWORD_LENGTH } from '../dist/index.js';
 
 const GATE_OK = { ok: true };
 const refuse = { ok: false, status: 403, error: 'Not on the list.' };
@@ -89,4 +89,31 @@ test("Supabase's own rejection is surfaced, not flattened", async () => {
   const res = await setPassword({ supabase: c, password: 'x'.repeat(12), confirm: () => GATE_OK });
   assert.equal(res.status, 400);
   assert.match(String(res.body.error), /data breach/);
+});
+
+test('hasPassword reads the stamped flag, not encrypted_password', () => {
+  // Supabase gives every user a random encrypted_password at creation, so the
+  // column says nothing about whether a password was ever chosen. Only the
+  // explicit flag does.
+  assert.equal(hasPassword({ user_metadata: { has_password: true } }), true);
+  assert.equal(hasPassword({ user_metadata: {} }), false);
+  assert.equal(hasPassword({ user_metadata: null }), false);
+  assert.equal(hasPassword(null), false);
+  assert.equal(hasPassword({ user_metadata: { has_password: 'yes' } }), false, 'must be strictly true');
+});
+
+test('setting a password stamps the flag in the same call', async () => {
+  let sawParams = null;
+  const c = {
+    auth: {
+      getUser: async () => okUser,
+      updateUser: async p => { sawParams = p; return { data: { user: null }, error: null }; },
+      signOut: async () => {},
+      signInWithPassword: async () => ({ data: { user: null }, error: null }),
+    },
+  };
+  const res = await setPassword({ supabase: c, password: 'x'.repeat(12), confirm: () => GATE_OK });
+  assert.equal(res.status, 200);
+  assert.equal(sawParams.password, 'x'.repeat(12));
+  assert.equal(sawParams.data.has_password, true, 'flag must be set atomically with the password');
 });
