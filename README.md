@@ -6,7 +6,7 @@ sessions, and one admission pipeline that every app resolves identity through.
 Consumed as a git dependency — there is no registry and no publish step.
 
 ```json
-"@jaron/app-auth": "github:jazongb/app-auth#v0.1.0"
+"@jaron/app-auth": "github:jazongb/app-auth#v0.2.0"
 ```
 
 npm runs `prepare` on git installs, so `dist/` is built at install time. A
@@ -135,6 +135,32 @@ changing anything in `session.ts`.
 
 Uses Web Crypto only — no `Buffer`, no `node:crypto` — so the same code runs in
 edge middleware, Node route handlers, and non-Next hosts.
+
+---
+
+## Passwords
+
+Optional, and layered on top of the code flow rather than replacing it. A
+password manager fills a password instantly where a code costs an inbox
+round-trip; that ergonomic gap is the entire reason this exists.
+
+`signInWithPassword()` and `setPassword()` both run the **same admission gate**
+the code path runs, against the user Supabase actually authenticated — never
+the address the client posted — and sign the user out on refusal. A password
+proves possession of a credential, not membership: in a shared `auth.users`
+pool it may belong to a different app's user entirely.
+
+Length is the only rule (`MIN_PASSWORD_LENGTH`, 12). Composition rules push
+people toward predictable substitutions and away from password managers. Turn
+on Supabase's leaked-password protection instead — checking the actual password
+against known breaches beats counting character classes.
+
+**There is no password-reset email, deliberately.** It would be a second
+code-to-the-same-inbox mechanism with no capability the sign-in code lacks, and
+every extra Supabase template is another default that ships with a URL in it —
+another place the no-links rule can silently regress. Forgetting a password is
+handled by signing in with a code and setting a new one; surface that as
+"Forgot your password?" on the login form so it is findable.
 
 ---
 

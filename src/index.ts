@@ -4,4 +4,5 @@ export * from './admission';
 export * from './session';
 export * from './supabase';
 export * from './otp';
+export * from './password';
 export * from './guard';
