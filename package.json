@@ -1,0 +1,28 @@
+{
+  "name": "@jaron/app-auth",
+  "version": "0.1.0",
+  "description": "Shared auth core for Next.js apps: Supabase OTP sign-in, shared-secret sessions, and a role admission pipeline. Knows nothing about any app's schema.",
+  "license": "UNLICENSED",
+  "private": false,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "src", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@supabase/ssr": ">=0.12.0",
+    "@supabase/supabase-js": ">=2.49.0",
+    "next": ">=15.0.0"
+  },
+  "devDependencies": {
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.112.3",
+    "@types/node": "^20",
+    "next": "^15.5.18",
+    "typescript": "^5"
+  }
+}
