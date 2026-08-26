@@ -127,7 +127,13 @@ test('tampering and cross-prefix reuse are rejected', async () => {
   const codec = sessionCodec({ cookieName: 'app_session', secret: SECRET, prefix: 'app', encoding: 'hex' });
   const good = await legacyA(Date.now() + 60_000);
 
-  assert.equal(await codec.verify(good.slice(0, -1) + '0'), false, 'flipped signature byte');
+  // Flip to a character guaranteed to differ from the one already there.
+  // `+ '0'` was flaky: the signature ends in '0' about one run in sixteen, and
+  // on those runs it "flipped" the byte to itself and the token stayed valid.
+  const lastChar = good[good.length - 1];
+  const flipped = good.slice(0, -1) + (lastChar === '0' ? '1' : '0');
+  assert.notEqual(flipped, good, 'the tampered token must actually differ');
+  assert.equal(await codec.verify(flipped), false, 'flipped signature byte');
   // Built from parts rather than a regex over a literal prefix: a regex that
   // silently stops matching forges nothing and the assertion passes for the
   // wrong reason. (It did exactly that once, which is how this comment exists.)
