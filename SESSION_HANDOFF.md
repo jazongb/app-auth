@@ -44,3 +44,14 @@ reading one as the other fails closed but logs everyone out. `SHIP.md` has the r
 Nothing pending. The clinic guest tier is scaffolded but unwired — `matchNetwork` is a config
 callback, so enabling it is config, not a refactor. Adopt in a Three Cedars app when one first
 needs auth.
+
+
+---
+
+## Moved from MASTER_OVERVIEW (2026-08-30)
+
+*These lines lived in `~/Developer/_registries/MASTER_OVERVIEW.md` until it was cut back to an index. Text unchanged.*
+
+**Note:** Public deliberately, so Vercel can install it without a token — npm falls back to HTTPS for the `github:` shorthand on a public repo, verified with `GIT_SSH_COMMAND=/bin/false npm ci`. Comments were genericised before publishing so it documents no live infrastructure; keep it that way. Consumers pin a tag on purpose — a shared auth package floating under four live apps is how one bad commit signs out every user at once.
+
+**Note:** `test/session-compat.test.mjs` is what stands between a refactor and invalidating every session cookie in the field. Three payload layouts are supported because the deployed apps genuinely differ, including whether the timestamp means expiry or issue time. Run `npm test` before every release.
